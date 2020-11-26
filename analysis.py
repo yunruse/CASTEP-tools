@@ -255,8 +255,8 @@ parser.add_argument('--every', metavar='N', type=int, default=1, help='''
     only record data at every N timesteps
 ''')
 parser.add_argument('--cell', metavar='path', type=str, default=None, help='''
-    manually specify .cell file path
-    (defaults to same name as .md file; must be provided)
+    path for .cell file
+    (defaults to same name as .md file)
 ''')
 parser.add_argument('--hydropath', metavar='path', type=str, default=None, help='''
     path for .hydrogens.txt for .cell files
