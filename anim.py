@@ -48,12 +48,12 @@ class Animator(MDFile):
         )
         self.savepath = savepath
         self.steps_per_picosecond = steps_per_picosecond
-        
+
         _, name = split(path)
         self.name, _ = splitext(name)
         self.fig = pyplot.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
-        
+
         maxs, mins = np.array([0, 0, 0]), np.array([np.inf, np.inf, np.inf])
         self.allowed = set()
         first_step = steps[0]
@@ -61,10 +61,9 @@ class Animator(MDFile):
             mins = np.min((mins, ion.pos), axis=0)
             maxs = np.max((maxs, ion.pos), axis=0)
             x, y, z = ion.pos
-            #if min(x, y, z) > 4 and max(x, y, z) < 8:
-            #    self.allowed.add((ion.number, ion.species))
+            # if min(x, y, z) > 4 and max(x, y, z) < 8:
+            #     self.allowed.add((ion.number, ion.species))
         self.minmax = (mins, maxs)
-
 
     def clear(self):
         self.ax.clear()
@@ -75,11 +74,11 @@ class Animator(MDFile):
         self.ax.set_zlim3d([mins[2], maxs[2]])
         # todo: make spheres actually look spherical?
         # todo: display axes
-    
+
     def plot(self, t=0):
         '''Basic plot of atoms.'''
         i = int(t * self.steps_per_picosecond // 1)
-        
+
         self.clear()
         artists = []
         ions = self.steps[i].ions
@@ -87,8 +86,8 @@ class Animator(MDFile):
         # ions = ions[:len(ions)//8]
         for ion in ions:
             x, y, z = ion.pos
-            #if (ion.number, ion.species) not in self.allowed:
-            #    continue
+            # if (ion.number, ion.species) not in self.allowed:
+            #     continue
             n_e, col = ATOMS[ion.species]
             if ion.species == 'H':
                 col = H_COLORS[int(ion.number) % len(H_COLORS)]
@@ -107,7 +106,7 @@ class Animator(MDFile):
             path = path.replace('$t', f'{t:06.2f}')
             path = path.replace('$n', self.name)
             pyplot.savefig(path)
-        
+
 
 if __name__ == '__main__':
     # TODO: make this a cli!

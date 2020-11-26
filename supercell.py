@@ -26,9 +26,11 @@ from numpy import gcd
 from parse_block import ParseError
 from parse_cell import CellFile
 
+
 def error(code, msg):
     print(msg, file=stderr)
     exit(code)
+
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument('paths', type=str, nargs='+', metavar='path',
@@ -62,7 +64,7 @@ def parse(args, path):
     if args.verbose:
         print('\n# Processing', path)
     if not isfile(path):
-        error(2, 'fatal: path provided is not a file')       
+        error(2, 'fatal: path provided is not a file')
     try:
         crystal = CellFile(path, args.forceabs)
     except ParseError as f:
@@ -73,10 +75,10 @@ fatal error parsing cell file on line {line_no}:
 {msg}''')
     except NotImplementedError as f:
         error(101, f'not yet implemented: {f.args[0]}')
-        
+
     if args.kpoint:
         crystal.baldereschi()
-    
+
     if args.verbose:
         N_ions = len(crystal.ions)
         print(f'Found: {N_ions} ions')
@@ -95,8 +97,10 @@ fatal error parsing cell file on line {line_no}:
 
     return len(crystal.ions)
 
+
 def is_file(path):
     return path is not None and path and isfile(path)
+
 
 def copy_if_dest(source, dest, extension):
     if is_file(source):
@@ -105,13 +109,14 @@ def copy_if_dest(source, dest, extension):
         copyfile(source, param_dest)
         return param_dest
 
+
 def __main__():
     args = parser.parse_args()
     num_ions = []
     for path in args.paths:
         n = parse(args, path)
         num_ions.append(n)
-        
+
         copy_if_dest(args.param, path, '.param')
         script_path = copy_if_dest(args.runscript, path, '.sh')
         if is_file(script_path):
@@ -133,8 +138,7 @@ def __main__():
         print(f'Largest cell: {max(num_ions)} ions')
         rms = sum(i**2 / len(num_ions) for i in num_ions) ** 0.5
         print(f'Effective cell (rms): {rms:.2f} ions')
-            
+
 
 if __name__ == '__main__':
     __main__()
-    

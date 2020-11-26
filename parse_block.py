@@ -1,6 +1,7 @@
 class ParseError(ValueError):
     pass
 
+
 def char_line_content(file):
     file.seek(0)
     chars = 0
@@ -15,8 +16,10 @@ def char_line_content(file):
             line += c
         chars += 1
 
+
 _START = '%BLOCK {}\n'
 _END = '%ENDBLOCK {}\n'
+
 
 def find_blocks(file):
     '''
@@ -28,19 +31,19 @@ def find_blocks(file):
     blocks = {}
     block = None
     blockline = 0
-    blockchar = 0        
+    blockchar = 0
 
     for stream, line_no, line in char_line_content(file):
         line = line.strip()
         if line.startswith('%'):
             cmd, name, *rest = line[1:].split()
             cmd = cmd.lower()
-            
+
             if rest:
                 raise ParseError(
                     'cannot parse this block structure',
                     line_no, line)
-            
+
             elif cmd == 'block':
                 if block is not None:
                     raise ParseError(
@@ -51,7 +54,7 @@ def find_blocks(file):
                         f'block {name} started but was already declared')
                 block = name
                 blockstart = stream + 1
-            
+
             elif cmd == 'endblock':
                 if block != name:
                     raise ParseError(
@@ -64,7 +67,7 @@ def find_blocks(file):
                 # the length is -1. This is intentional, and is caught.
                 blocks[block] = (blockstart, blockend - blockstart)
                 block = None
-            
+
             else:
                 raise ParseError(
                     f"cannot understand {name!r} instruction",
@@ -74,8 +77,9 @@ def find_blocks(file):
         raise ParseError(
             f'block {block!r} started on line {blockstart} but never ended',
             line_no, line)
-        
+
     return blocks
+
 
 class BlockFile:
     '''
@@ -85,21 +89,22 @@ class BlockFile:
 
     These blocks may be accessed by indexing.
     '''
-    
+
     __slots__ = ('_file', '_blocks')
+
     def __init__(self, path, lattice_save=True):
         self._file = open(path, 'r+')
         self._blocks = find_blocks(self._file)
-    
+
     def __getitem__(self, name):
         start, length = self._blocks.get(name, (0, 0))
         if length < 0:
             return ''
         f = self._file
-        
+
         f.seek(start)
         return f.read(length)
-    
+
     def __delitem__(self, name):
         if name not in self._blocks:
             return
@@ -107,15 +112,15 @@ class BlockFile:
         f = self._file
 
         # this assumes there is no extr. whitespace in block declarations!
-        
-        f.seek(start + length + len(_END.format(name)) )
+
+        f.seek(start + length + len(_END.format(name)))
         pos_end = f.tell()
         rest_of_file = f.read()
-        f.seek(start - len(_START.format(name)) )
+        f.seek(start - len(_START.format(name)))
         pos_start = f.tell()
         f.truncate()
         f.write(rest_of_file)
-        
+
         # pull all indices to correct values
         for n, (s, l) in self._blocks.items():
             if s > start:
@@ -123,7 +128,7 @@ class BlockFile:
 
     def __setitem__(self, name, contents):
         f = self._file
-        
+
         if name in self:
             start, length = self._blocks[name]
             length2 = len(contents)

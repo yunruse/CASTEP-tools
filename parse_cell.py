@@ -13,6 +13,7 @@ K_POINTS = 'kpoint_list'
 COORD = "{:14f} {:14f} {:14f}"
 RIGHT_ANGLE = np.pi / 2
 
+
 def angle_between(a, b):
     '''
     The angle in multiples of 90deg between two vectors.
@@ -21,6 +22,7 @@ def angle_between(a, b):
         a / np.linalg.norm(a),
         b / np.linalg.norm(b)
     ), -1.0, 1.0)) / RIGHT_ANGLE
+
 
 def cube_difference(length, cell_vectors):
     '''
@@ -33,7 +35,7 @@ def cube_difference(length, cell_vectors):
     A = np.linalg.norm(a)
     B = np.linalg.norm(b)
     C = np.linalg.norm(c)
-    
+
     return sum((x-1)**2 for x in (
         angle_between(b, c),
         angle_between(a, c),
@@ -42,6 +44,7 @@ def cube_difference(length, cell_vectors):
         A/C,
         A/B
     ))
+
 
 def shear_matrices(n):
     '''Enumerate candidate shear matrices.'''
@@ -53,6 +56,7 @@ def shear_matrices(n):
         range(n),
         range(n)
     ))
+
 
 class CellFile(BlockFile):
     __slots__ = BlockFile.__slots__ + ('_ions', 'force_abs')
@@ -69,7 +73,7 @@ class CellFile(BlockFile):
         If force_abs is True, this will forcefully delete positions_rel
         and generate a positions_abs block. If False, it will
         use whichever coordinate system is given.
-        
+
         If lattice_save is not set to False, the lattice_cart block
         is modified so that it ignores units in header. This means
         that the lattice_cart block will execute undefined behaviour
@@ -78,7 +82,7 @@ class CellFile(BlockFile):
         BlockFile.__init__(self, path)
 
         self.force_abs = force_abs
-        
+
         # If ANG or other unit present, sneakily modify pointer
         # to point to starting from next line.
         if False and CELL_VEC in self:
@@ -98,7 +102,7 @@ class CellFile(BlockFile):
                 for (sym, pos) in self._ions_get(POS_REL)]
         else:
             self._ions = self._ions_get(POS_ABS)
-    
+
     @property
     def cell_vectors(self):
         lines = self[CELL_VEC].split('\n')
@@ -109,12 +113,12 @@ class CellFile(BlockFile):
             if numbers.isdecimal():
                 break
             lines.pop(0)
-        
+
         return np.array([
             [float(x) for x in line.split()]
             for line in lines if line
         ])
-    
+
     @cell_vectors.setter
     def cell_vectors(self, cell):
         self[CELL_VEC] = '\n'.join(
@@ -130,7 +134,7 @@ class CellFile(BlockFile):
         k_point = self.reciprocal_vectors().sum(1) / 4
         # x, y, z, weight
         self[K_POINTS] = COORD.format(*k_point) + ' 1\n'
-    
+
     def _ions_get(self, block):
         ions = []
         for line in self[block].split('\n'):
@@ -140,20 +144,20 @@ class CellFile(BlockFile):
                 if len(pos):
                     ions.append((sym, pos))
         return ions
-    
+
     @property
     def ions(self):
         return self._ions
-    
+
     @ions.setter
     def ions(self, value):
         self._ions = value
-        
+
         if self.force_abs and POS_REL in self:
             del self[POS_REL]
         use_rel = POS_REL in self and not self.force_abs
         cellinv = np.linalg.pinv(self.cell_vectors)
-        
+
         block = ''
         seen = set()
         for sym, pos in value:
@@ -161,13 +165,13 @@ class CellFile(BlockFile):
             if p in seen and sym == 'Q':
                 print('aaaah!', sym, p)
             seen.add(p)
-            
+
             if use_rel:
                 pos = pos @ cellinv
             block += f'{sym:<4} {COORD.format(*pos)}\n'
 
         self[POS_REL if use_rel else POS_ABS] = block
-    
+
     def species(self):
         species = {}
         for (s, r) in self.ions:
@@ -183,7 +187,6 @@ class CellFile(BlockFile):
             ny = nx
             nz = nx
 
-
         # embiggen cell vectors
         self.cell_vectors = cell = np.array([
             a*nx, b*ny, c*nz
@@ -197,8 +200,8 @@ class CellFile(BlockFile):
             r = np.array([x/nx, y/ny, z/nz]) @ cell
             for sym, p in ions:
                 newions.append((sym, r + p))
-        #input('--')
-        
+        # input('--')
+
         self.ions = newions
 
     def cubify_old(self, n=1):
@@ -206,7 +209,7 @@ class CellFile(BlockFile):
         # map unit cube to relative coordinates and round
         # this generates a supercell with shear, which
         # maintains translational symmetry
-        
+
         cell = self.cell_vectors
         vec = (n**2 * np.linalg.pinv(cell)).round()
         self.supercell(int(vec.max()))
@@ -221,8 +224,9 @@ class CellFile(BlockFile):
         '''
         # iterate over 8n**3 possible lower diagonal shears
         # to find that with the minimal angle
-        
+
         cell = self.cell_vectors
+
         def shear(a, b, c, d, e, f):
             return np.array([
                 [a, 0, 0],
@@ -237,7 +241,7 @@ class CellFile(BlockFile):
                 (a, b, c, *d) for (a, b, c, *d) in shears
                 if a*b*c <= max_supersize
             ]
-        
+
         shears.sort(key=lambda sh: cube_difference(
             n, shear(*sh) @ cell
         ))

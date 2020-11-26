@@ -27,10 +27,11 @@ class Queue:
     State-machine for qstat to recall tasks not queued or running
     (and tasks that are complete, if ran on a loop)
     '''
+
     def __init__(self, namepath):
         self.lastseen = dict()
         self.finished = []
-        
+
         self.names = []
         if namepath is not None and os.path.isfile(namepath):
             with open(namepath) as f:
@@ -45,7 +46,7 @@ class Queue:
 
         queued = list(tree.find('job_info'))
         queued.sort(key=lambda j: float(j.find('JAT_prio').text))
-        
+
         running = list(tree.find('queue_info'))
         running.sort(key=lambda j: (
             j.find('JAT_start_time').text,
@@ -62,7 +63,7 @@ class Queue:
         nowseen = dict()
         # to find tasks not in self.names
         unseen_names = set(self.names or set())
-        
+
         for job in jobs:
             def F(length, *names):
                 for x in names:
@@ -83,7 +84,7 @@ class Queue:
             elif 'r' in state:
                 color = Fore.CYAN
                 verb = '  started '
-            
+
             ID = F(7, 'JB_job_number')
             slots = F(2, 'slots')
             stateS = Style.BRIGHT + state + Style.RESET_ALL + color
@@ -93,10 +94,10 @@ class Queue:
             name = F(0, 'JB_name')
             nameS = Style.RESET_ALL + color + Style.BRIGHT
             nameS += name + Style.RESET_ALL
-            
+
             text = f"{ID} {slots} {stateS} {date} {nameS}"
             print(color + text)
-            
+
             # handle self.finished and self.names
             if state != 'dr':
                 # if marked for deletion, don't put into "seen tasks"
@@ -105,14 +106,14 @@ class Queue:
                 unseen.pop(ID)
             if name in unseen_names:
                 unseen_names.remove(name)
-        
+
         self.lastseen = nowseen
 
         for ID, (name, text) in unseen.items():
             if name in unseen_names:
                 unseen_names.remove(name)
             self.finished.insert(0, text)
-                
+
         for job in self.finished:
             print(Fore.GREEN + job.replace(' r  ', ' d  '))
         for name in unseen_names:
@@ -127,12 +128,11 @@ class Queue:
         desired = set(self.names)
         seen = set(job.find('JB_name').text for job in self.jobs())
         return desired - seen
-        
+
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument('--loop', action='store_true',
                     help='loop every 10 seconds')
-# do these!!
 parser.add_argument('--list', metavar='path', type=str, default=None,
                     help='''
 path to a list of task names that should be in queue (are also printed)

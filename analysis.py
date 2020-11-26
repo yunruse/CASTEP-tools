@@ -15,11 +15,15 @@ from numpy.linalg import pinv, norm
 from parse_cell import CellFile
 from parse_md import MDFile
 
+
 def find(path):
     if not isfile(path):
         raise FileNotFoundError(f'Could not find `{path}`')
 
+
 FUNCS = {}
+
+
 def method(command):
     # small wrapper for methods, binding them to the terminal
     # and adding niceties
@@ -41,14 +45,16 @@ def method(command):
         return newfunc
     return wrapper
 
+
 D = [-1, 0, 1]
 DELTAS = array(list(product(D, D, D)))
 
 TIMELABEL = 'Time / ps'
 
+
 class Analysis:
     __slots__ = ['name', 'outpath', 'record_every', 'steps', 'cell', 'cellinv']
-    
+
     def __init__(
         self,
         mdpath: str,
@@ -61,21 +67,21 @@ class Analysis:
         _, name = split(mdpath)
         self.name, _ = splitext(name)
         self.outpath = outpath
-        
+
         self.record_every = record_every
-        
+
         md = MDFile(
             mdpath,
             hydro_path,
             step_is_valid=lambda i: i % record_every == 0,
         )
         self.steps = [s for s in md.steps if s.ions]
-        
+
         if cellpath is None:
             cellpath = mdpath.replace('.md', '.cell')
 
         self.has_hydro_tags = hydro_path is not None
-        
+
         find(cellpath)
         self.cell = CellFile(cellpath).cell_vectors
         self.cellinv = pinv(self.cell)
@@ -84,12 +90,13 @@ class Analysis:
         pyplot.title(f'{name} of `{self.name}`')
         pyplot.xlabel(TIMELABEL)
         pyplot.ylabel(f'{name} / {unit}')
-        
+
         time = [step.t / 1000 for step in self.steps]
         var = [func(step) for step in self.steps]
         valid = [i for i in var if i is not nan]
         pyplot.plot(time, var)
-        pyplot.plot([0, max(time)], [valid[0], valid[0]], color='gray', linestyle='-')
+        pyplot.plot([0, max(time)], [valid[0], valid[0]],
+                    color='gray', linestyle='-')
 
     @method('temp')
     def temperature(self):
@@ -98,7 +105,7 @@ class Analysis:
     @method('pressure')
     def pressure(self):
         self.plot_variable('Pressure', 'as raw', lambda step: step.P)
-    
+
     def cell_square_dist(self, a, b):
         '''
         Return |b - a|**2 considering that
@@ -110,7 +117,7 @@ class Analysis:
         b_imgs = ((b @ self.cellinv) + DELTAS) @ self.cell
         img_dists = ((b_imgs - a)**2).sum(1)
         return min(img_dists)
-    
+
     def msd(self, step):
         '''Mean square displacement from reference cell'''
         species = {}
@@ -122,17 +129,17 @@ class Analysis:
                 species[a.species] = []
             dist = self.cell_square_dist(a.pos, b.pos)
             species[a.species].append(dist)
-        
+
         return {k: sum(v)/len(v) for k, v in species.items()}
 
     @method('msd')
     def msds(self):
         pyplot.title(f'Mean square displacement of `{self.name}`')
         steps = self.steps[1:]
-        
+
         pyplot.xlabel(TIMELABEL)
         t = [step.t / 1000 for step in steps]
-        
+
         pyplot.ylabel('Mean square displacement / Å²')
         msds = [self.msd(step) for step in steps]
         for k in msds[0]:
@@ -164,7 +171,7 @@ class Analysis:
             ch, hh = self.bonds(steps[i])
             CH += ch
             HH += hh
-            
+
         CH = [i / N for i in CH]
         HH = [i / N for i in HH]
         return CH, HH
@@ -179,14 +186,14 @@ class Analysis:
         if not self.has_hydro_tags:
             print('Error! rdf requires hydrogen tagging')
             return NotImplemented
-        
+
         pyplot.title(f'Radial distribution function of `{self.name}`')
         pyplot.xlabel(f'Bond length $r$ (dstep={dstep})')
         pyplot.ylabel('Radial distribution $g(r)$')
 
         #CH, HH = self.bonds(self.steps[-1])
         CH, HH = self.bonds_gen(dstep)
-        
+
         maxbond = max(HH[0], CH[0])
         lengths = arange(DR, maxbond, DR)
 
@@ -202,15 +209,15 @@ class Analysis:
             return hist
 
         ions = self.steps[0].ions
-        
+
         n_H2 = len([i.pos for i in ions if i.species == 'H(H2)'])
         n_CH4 = len([i.pos for i in ions if i.species == 'H(CH4)'])
-        
+
         a, b, c = self.cell
         V = norm(dot(cross(a, b), c))
         ch_hist = hist(CH, n_CH4 / V)
         hh_hist = hist(HH, n_H2 / V)
-        
+
         pyplot.plot(lengths / BOND_CH, ch_hist, label='CH (CH4)')
         pyplot.plot(lengths / BOND_HH, hh_hist, label='HH (H2)')
         pyplot.legend()
@@ -222,7 +229,7 @@ class Analysis:
         maxy = yvals[-3]*1.1
         #maxy = 6
         pyplot.ylim(-0.1, maxy)
-        
+
         pyplot.plot([-1, maxbond+0.1], [1, 1], color='gray', linestyle='-')
         pyplot.xlim(-0.1, maxbond)
 
@@ -257,24 +264,26 @@ parser.add_argument('--hydropath', metavar='path', type=str, default=None, help=
 
 # TODO: actually do stuff!
 
+
 def main(argv=None):
     args = parser.parse_args(argv)
-    
+
     if args.terminal:
         pyplot.rcParams.update({
             'font.size': 12,
             'figure.figsize': (4.4, 2.2),
             'figure.dpi': 50
         })
-        
+
     self = Analysis(args.path, args.out, args.cell, args.hydropath, args.every)
     print(f'read {len(self.steps)} timesteps)')
-        
+
     graphs = [FUNCS[i] for i in args.options]
     graphs = list(dict.fromkeys(graphs))  # remove duplicates
     for name in graphs:
         getattr(self, name)()
     return self
+
 
 if __name__ == '__main__':
     argv = None
@@ -282,4 +291,3 @@ if __name__ == '__main__':
     self = main(argv)
 
     # todo: pickle
-        
