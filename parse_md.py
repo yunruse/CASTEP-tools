@@ -60,13 +60,18 @@ class MDFile:
     angstrom, seconds, kelvin, GPa, joule
     '''
     __slots__ = 'path file steps'.split()
-    def __init__(self, path, hydro_path=None):
+    def __init__(
+        self,
+        path,
+        hydro_path=None,
+        step_is_valid=lambda i: True,
+        step_should_stop=lambda i: False,
+    ):
         self.path = path
         self.file = open(path)
         self.steps = []
         
-        lines = self.file.readlines()
-        for n, line in enumerate(lines):
+        while line := self.file.readline():
             if line.strip() == 'END header':
                 break
         else:
@@ -81,21 +86,32 @@ class MDFile:
                     _, mol = line.strip().split()
                     mol = 'H('+mol+')'
                     hydro_tags.append(mol)
-        
+
+        # Initialise line iterator.
+        # The first "step" is a dud that covers the header; it is skipped.
+        this_step_is_valid = True
         step = Step()
-        for line in lines[n+1:]:
+        step_no = -1
+        
+        while line := self.file.readline():
             chunks = line.split()
             
             if not chunks:
                 if step.t is not None:
-                    if step.t % 10 == 0:
-                       print(step.t)
                     self.steps.append(step)
                 step = Step()
+                step_no += 1
+                this_step_is_valid = step_is_valid(step_no)
+                if step_should_stop(step_no):
+                    break
+            
             elif len(chunks) == 1:
                 step.t = float(chunks[0]) * ATOMIC_TIME
+            elif not this_step_is_valid:
+                continue
+            
             elif len(chunks) < 3 or chunks[-2] != '<--':
-                print(chunks)
+                print(f'Unknown data `{line}`')
                 break
             else:
                 *chunks, _, tag = chunks
