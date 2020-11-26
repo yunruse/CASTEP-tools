@@ -17,8 +17,16 @@ import matplotlib.animation as animation
 from parse_cell import CellFile
 from parse_md import MDFile
 
+
+def find(path):
+    if not isfile(path):
+        raise FileNotFoundError(f'Could not find `{path}`')
+
+
 ATOMS = {
     'H': (1, 'white'),
+    'H(H2)': (0.05, 'white'),
+    'H(CH4)': (1, 'pink'),
     'C': (12, 'gray'),
 }
 
@@ -36,27 +44,35 @@ SPHERE = np.array([
 ]) * RADIUS
 
 
-class Animator(MDFile):
+class Animator:
     def __init__(
-        self, path, savepath,
-        start, stop, step,
+        self, mdpath, outpath,
+        start, stop, step=0.1,
+        cellpath=None, hydro_path=None,
         steps_per_picosecond=2000,
+        color_species=('H', 'H(CH4)', 'H(H2)'),
     ):
+        find(mdpath)
+        _, name = split(mdpath)
+        self.name, _ = splitext(name)
+        self.outpath = outpath
+
         self.times = np.arange(start, stop, step)
+        self.steps_per_picosecond = steps_per_picosecond
+
         steps = (self.times * steps_per_picosecond).astype(int)
         max_step = max(steps)
-        MDFile.__init__(
-            self, path,
+        md = MDFile(
+            mdpath,
+            hydro_path,
             step_is_valid=lambda i: i in steps,
             step_should_stop=lambda i: i > max_step
         )
-        self.savepath = savepath
-        self.steps_per_picosecond = steps_per_picosecond
+        self.steps = md.steps
 
-        _, name = split(path)
-        self.name, _ = splitext(name)
         self.fig = pyplot.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
+        self.color_species = color_species
 
         maxs, mins = np.array([0, 0, 0]), np.array([np.inf, np.inf, np.inf])
         self.allowed = set()
@@ -69,6 +85,14 @@ class Animator(MDFile):
             #     self.allowed.add((ion.number, ion.species))
         self.minmax = (mins, maxs)
 
+        if cellpath is None:
+            cellpath = mdpath.replace('.md', '.cell')
+
+        self.has_hydro_tags = hydro_path is not None
+
+        find(cellpath)
+        self.cell = CellFile(cellpath).cell_vectors
+
     def clear(self):
         self.ax.clear()
         self.ax.set_title(f'MD of `{self.name}` (Angstroms)')
@@ -77,7 +101,24 @@ class Animator(MDFile):
         self.ax.set_ylim3d([mins[1], maxs[1]])
         self.ax.set_zlim3d([mins[2], maxs[2]])
         # todo: make spheres actually look spherical?
-        # todo: display axes
+        if self.cell is not None:
+            a, b, c = self.cell
+            zero = np.array([0, 0, 0])
+
+            def line(a, b, col='black', lw=0.5):
+                self.ax.plot(*np.array([a, b]).T, col, linewidth=lw)
+            line(zero, a, 'red', 1)
+            line(zero, b, 'green', 1)
+            line(zero, c, 'blue', 1)
+            line(a, a+b)
+            line(a, a+c)
+            line(b, b+a)
+            line(b, b+c)
+            line(c, c+a)
+            line(c, c+b)
+            line(a+b, a+b+c)
+            line(b+c, a+b+c)
+            line(a+c, a+b+c)
 
     def plot(self, t=0):
         '''Basic plot of atoms.'''
@@ -93,7 +134,7 @@ class Animator(MDFile):
             # if (ion.number, ion.species) not in self.allowed:
             #     continue
             n_e, col = ATOMS[ion.species]
-            if ion.species == 'H':
+            if ion.species in self.color_species:
                 col = H_COLORS[int(ion.number) % len(H_COLORS)]
             sx, sy, sz = SPHERE * n_e ** (1/3)
             artist = self.ax.plot_surface(x+sx, y+sy, z+sz, color=col)
@@ -106,7 +147,7 @@ class Animator(MDFile):
             times = self.times
         for t in times:
             self.plot(t)
-            path = self.savepath
+            path = self.outpath
             path = path.replace('$t', f'{t:06.2f}')
             path = path.replace('$n', self.name)
             pyplot.savefig(path)
@@ -116,7 +157,7 @@ parser = ArgumentParser(description=__doc__)
 parser.add_argument('path', type=str, help='''
     the file path of the .md file to produce animations of
 ''')
-parser.add_argument('savepath', type=str, help='''
+parser.add_argument('outpath', type=str, help='''
     path to save frames to, where `$t` is the time (picoseconds)
 ''')
 parser.add_argument('--start', '-a', type=float,
@@ -125,16 +166,27 @@ parser.add_argument('--stop', '-z', type=float,
                     default=None, help='stop time for animation')
 parser.add_argument('--step', '-s', type=float,
                     default=0.1, help='step time for animation')
+parser.add_argument('--cell', metavar='path', type=str, default=None, help='''
+    path for .cell file
+    (defaults to same name as .md file)
+''')
+parser.add_argument('--hydropath', metavar='path', type=str, default=None, help='''
+    path for .hydrogens.txt for .cell files
+''')
 parser.add_argument('--frequency', '-f', type=int,
                     default=2000, help='number of timesteps per picosecond in simulation')
+parser.add_argument('--color', '-c', type=str,
+                    default='H,H(CH4),H(H2)', help='comma-separated species symbols to colorify')
 
 
 def main(argv=None):
     args = parser.parse_args(argv)
     self = Animator(
-        args.path, args.savepath,
+        args.path, args.outpath,
         args.start, args.stop, args.step,
-        args.frequency
+        args.cell, args.hydropath,
+        args.frequency,
+        args.color.split(','),
     )
     self.run()
     return self
