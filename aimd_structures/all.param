@@ -1,0 +1,12 @@
+cut_off_energy = 300 eV
+xc_functional = LDA
+opt_strategy = speed
+continuation = default
+
+task = molecular dynamics
+md_delta_t = 0.5 fs
+# ~420 time steps per 10 hours, nudge it up so we ensure limit is hit
+md_num_iter = 500
+md_ensemble = NVT
+md_temperature = 300 K
+md_thermostat = Langevin
