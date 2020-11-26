@@ -2,8 +2,12 @@
 Animation tool for hydrocarbons.
 
 Produces snapshots at various frames, and may color-code hydrogens.
+
+Unless specified, time is in picoseconds.
+The simulation assumes that each timestep is of equal length.
 '''
 
+from argparse import ArgumentParser
 from os.path import isfile, isdir, split, splitext
 
 import numpy as np
@@ -108,18 +112,33 @@ class Animator(MDFile):
             pyplot.savefig(path)
 
 
-if __name__ == '__main__':
-    # TODO: make this a cli!
-    DIR = '/System/Volumes/Data/Volumes/Media/castep/cells/'
-    PATH = DIR + 'CH6_P212121-100gpa-600K.md'
+parser = ArgumentParser(description=__doc__)
+parser.add_argument('path', type=str, help='''
+    the file path of the .md file to produce animations of
+''')
+parser.add_argument('savepath', type=str, help='''
+    path to save frames to, where `$t` is the time (picoseconds)
+''')
+parser.add_argument('--start', '-a', type=float,
+                    default=None, help='start time for animation')
+parser.add_argument('--stop', '-z', type=float,
+                    default=None, help='stop time for animation')
+parser.add_argument('--step', '-s', type=float,
+                    default=0.1, help='step time for animation')
+parser.add_argument('--frequency', '-f', type=int,
+                    default=2000, help='number of timesteps per picosecond in simulation')
 
-    PATH = DIR + 'CH6_P212121-20gpa-300K.md'
-    SAVEPATH = '/Users/yunruse/Downloads/test/anim-$n-$t.png'
-    start, stop, step = 7.9, 8.65, 0.01
 
+def main(argv=None):
+    args = parser.parse_args(argv)
     self = Animator(
-        PATH, SAVEPATH,
-        start=start, stop=stop, step=step,
-        steps_per_picosecond=2000,
+        args.path, args.savepath,
+        args.start, args.stop, args.step,
+        args.frequency
     )
     self.run()
+    return self
+
+
+if __name__ == '__main__':
+    self = main()
