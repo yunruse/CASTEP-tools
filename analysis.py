@@ -275,7 +275,7 @@ def main(argv=None):
         })
 
     self = Analysis(args.path, args.out, args.cell, args.hydropath, args.every)
-    print(f'read {len(self.steps)} timesteps)')
+    print(f'read {len(self.steps)} timesteps')
 
     graphs = [FUNCS[i] for i in args.options]
     graphs = list(dict.fromkeys(graphs))  # remove duplicates
