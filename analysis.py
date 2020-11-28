@@ -287,7 +287,6 @@ def main(argv=None):
 
 if __name__ == '__main__':
     argv = None
-    argv = []
     self = main(argv)
 
     # todo: pickle
