@@ -106,13 +106,15 @@ class CellFile(BlockFile):
     @property
     def cell_vectors(self):
         lines = self[CELL_VEC].split('\n')
-        # sometimes lines are given with units – we implicitly assume
-        # ANG
+        # sometimes lines are given with units,
+        # so we attempt to skip invalid headers
+        # (and always assume angstroms!)
         while lines:
-            numbers = lines[0].strip().replace('.', '').replace(' ', '')
-            if numbers.isdecimal():
+            try:
+                [float(x) for x in lines[0].split()]
                 break
-            lines.pop(0)
+            except ValueError:
+                lines.pop(0)
 
         return np.array([
             [float(x) for x in line.split()]
