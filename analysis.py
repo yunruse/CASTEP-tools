@@ -53,7 +53,6 @@ TIMELABEL = 'Time / ps'
 
 
 class Analysis:
-    __slots__ = ['name', 'outpath', 'record_every', 'steps', 'cell', 'cellinv']
 
     def __init__(
         self,
