@@ -80,6 +80,13 @@ class MDFile:
         while line := self.file.readline():
             if line.strip() == 'END header':
                 break
+            else:
+                chunks = line.split()
+                if len(chunks) > 2 and chunks[-2] == '<--':
+                    # no header exists and we've searched too far;
+                    # seek to beginning
+                    self.file.seek(0)
+                    break
         else:
             return
 
