@@ -25,22 +25,32 @@ FUNCS = {}
 
 
 def method(command):
-    # small wrapper for methods, binding them to the terminal
+    '''
+    Complicated meta-wrapper for functions in Analysis.
+
+    Registers an identifier, used both in commands and as a key
+    in Analysis.graphs. Additionally, saves output to files
+    '''
     # and adding niceties
     def wrapper(func):
         @wraps(func)
-        def newfunc(self, *args, **kwargs):
+        def newfunc(self):
+
             # ensure pyplot is clear
             pyplot.clf()
-            result = func(self, *args, **kwargs)
+
+            ax = pyplot.axes()
+            result = func(self, ax)
             if result is NotImplemented:
                 return
-            # save with helpful formatting
-            path = self.outpath.replace(
-                '$name', self.name).replace(
-                '$method', command)
-            print(path)
-            pyplot.savefig(path)
+
+            # attempt to save file
+            if self.outpath:
+                path = self.outpath.replace(
+                    '$name', self.name).replace(
+                    '$method', command)
+                print(path)
+                pyplot.savefig(path)
         FUNCS[command] = func.__name__
         return newfunc
     return wrapper
@@ -53,7 +63,6 @@ TIMELABEL = 'Time / ps'
 
 
 class Analysis:
-
     def __init__(
         self,
         mdpath: str,
@@ -85,25 +94,25 @@ class Analysis:
         self.cell = CellFile(cellpath).cell_vectors
         self.cellinv = pinv(self.cell)
 
-    def plot_variable(self, name, unit, func):
-        pyplot.title(f'{name} of `{self.name}`')
-        pyplot.xlabel(TIMELABEL)
-        pyplot.ylabel(f'{name} / {unit}')
+    def plot_variable(self, ax, name, unit, func):
+        ax.set_title(f'{name} of `{self.name}`')
+        ax.set_xlabel(TIMELABEL)
+        ax.set_ylabel(f'{name} / {unit}')
 
         time = [step.t / 1000 for step in self.steps]
         var = [func(step) for step in self.steps]
         valid = [i for i in var if i is not nan]
-        pyplot.plot(time, var)
-        pyplot.plot([0, max(time)], [valid[0], valid[0]],
-                    color='gray', linestyle='-')
+        ax.plot(time, var)
+        ax.plot([0, max(time)], [valid[0], valid[0]],
+                color='gray', linestyle='-')
 
     @method('temp')
-    def temperature(self):
-        self.plot_variable('Temperature', 'K', lambda step: step.T)
+    def temperature(self, ax):
+        self.plot_variable(ax, 'Temperature', 'K', lambda step: step.T)
 
     @method('pressure')
-    def pressure(self):
-        self.plot_variable('Pressure', 'as raw', lambda step: step.P)
+    def pressure(self, ax):
+        self.plot_variable(ax, 'Pressure', 'as raw', lambda step: step.P)
 
     def cell_square_dist(self, a, b):
         '''
@@ -132,19 +141,19 @@ class Analysis:
         return {k: sum(v)/len(v) for k, v in species.items()}
 
     @method('msd')
-    def msds(self):
-        pyplot.title(f'Mean square displacement of `{self.name}`')
+    def msds(self, ax):
+        ax.set_title(f'Mean square displacement of `{self.name}`')
         steps = self.steps[1:]
 
-        pyplot.xlabel(TIMELABEL)
+        ax.set_xlabel(TIMELABEL)
         t = [step.t / 1000 for step in steps]
 
-        pyplot.ylabel('Mean square displacement / Å²')
+        ax.set_ylabel('Mean square displacement / Å²')
         msds = [self.msd(step) for step in steps]
         for k in msds[0]:
-            pyplot.plot(t, [i[k] for i in msds], label=k)
+            ax.plot(t, [i[k] for i in msds], label=k)
 
-        pyplot.legend()
+        ax.legend()
 
     def bonds(self, step):
         C = [i.pos for i in step.ions if i.species == 'C']
@@ -176,22 +185,23 @@ class Analysis:
         return CH, HH
 
     @method('rdf')
-    def rdf(self, dstep=250):
+    def rdf(self, ax):
         BOND_CH = 1.08595
         BOND_HH = 0.7414
         BOND_CH = BOND_HH = 1
         DR = 0.04
+        DSTEP = 250
 
         if not self.has_hydro_tags:
             print('Error! rdf requires hydrogen tagging')
             return NotImplemented
 
-        pyplot.title(f'Radial distribution function of `{self.name}`')
-        pyplot.xlabel(f'Bond length $r$ (dstep={dstep})')
-        pyplot.ylabel('Radial distribution $g(r)$')
+        ax.set_title(f'Radial distribution function of `{self.name}`')
+        ax.set_xlabel(f'Bond length $r$ (dstep={DSTEP})')
+        ax.set_ylabel('Radial distribution $g(r)$')
 
-        #CH, HH = self.bonds(self.steps[-1])
-        CH, HH = self.bonds_gen(dstep)
+        # CH, HH = self.bonds(self.steps[-1])
+        CH, HH = self.bonds_gen(DSTEP)
 
         maxbond = max(HH[0], CH[0])
         lengths = arange(DR, maxbond, DR)
@@ -217,20 +227,20 @@ class Analysis:
         ch_hist = hist(CH, n_CH4 / V)
         hh_hist = hist(HH, n_H2 / V)
 
-        pyplot.plot(lengths / BOND_CH, ch_hist, label='CH (CH4)')
-        pyplot.plot(lengths / BOND_HH, hh_hist, label='HH (H2)')
-        pyplot.legend()
+        ax.plot(lengths / BOND_CH, ch_hist, label='CH (CH4)')
+        ax.plot(lengths / BOND_HH, hh_hist, label='HH (H2)')
+        ax.legend()
 
         # the top two values will be the first spike, the
         # intramolecular covalent bonds
         # (one for each histogram)
         yvals = sorted(ch_hist + hh_hist)
         maxy = yvals[-3]*1.1
-        #maxy = 6
-        pyplot.ylim(-0.1, maxy)
+        # maxy = 6
+        ax.ylim(-0.1, maxy)
 
-        pyplot.plot([-1, maxbond+0.1], [1, 1], color='gray', linestyle='-')
-        pyplot.xlim(-0.1, maxbond)
+        ax.plot([-1, maxbond+0.1], [1, 1], color='gray', linestyle='-')
+        ax.xlim(-0.1, maxbond)
 
 
 parser = ArgumentParser(description=__doc__)
@@ -261,8 +271,6 @@ parser.add_argument('--hydropath', metavar='path', type=str, default=None, help=
     path for .hydrogens.txt for .cell files
 ''')
 
-# TODO: actually do stuff!
-
 
 def main(argv=None):
     args = parser.parse_args(argv)
@@ -280,7 +288,8 @@ def main(argv=None):
     graphs = [FUNCS[i] for i in args.options]
     graphs = list(dict.fromkeys(graphs))  # remove duplicates
     for name in graphs:
-        getattr(self, name)()
+        method = getattr(self, name)
+        method()
     return self
 
 
