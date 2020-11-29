@@ -3,6 +3,7 @@ Analysis script by Mia Dobson.
 Outputs graph(s) of desired statistics.
 '''
 
+from pickle import dump
 from argparse import ArgumentParser
 from functools import wraps
 from itertools import product
@@ -51,6 +52,12 @@ def method(command):
                     '$method', command)
                 print(path)
                 pyplot.savefig(path)
+                if self.save_state:
+                    path, _ = splitext(path)
+                    path += '.ax'
+                    print(path)
+                    with open(path, 'wb') as f:
+                        dump(ax, f)
         FUNCS[command] = func.__name__
         return newfunc
     return wrapper
@@ -70,11 +77,13 @@ class Analysis:
         cellpath=None,
         hydro_path=None,
         record_every: int = 1,
+        save_state=False,
     ):
         find(mdpath)
         _, name = split(mdpath)
         self.name, _ = splitext(name)
         self.outpath = outpath
+        self.save_state = save_state
 
         self.record_every = record_every
 
@@ -247,6 +256,9 @@ parser = ArgumentParser(description=__doc__)
 parser.add_argument('-t', '--terminal', action='store_true', help='''
     configure graph for better terminal display
 ''')
+parser.add_argument('-s', '--savestate', action='store_true', help='''
+    save state to an .analysis file (with same name scheme as `out`)
+''')
 
 parser.add_argument('path', type=str, help='''
     the file path of the .md file OR a .analysis file
@@ -282,7 +294,9 @@ def main(argv=None):
             'figure.dpi': 50
         })
 
-    self = Analysis(args.path, args.out, args.cell, args.hydropath, args.every)
+    self = Analysis(
+        args.path, args.out, args.cell,
+        args.hydropath, args.every, args.savestate)
     print(f'read {len(self.steps)} timesteps')
 
     graphs = [FUNCS[i] for i in args.options]
