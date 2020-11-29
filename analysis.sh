@@ -22,6 +22,6 @@ for f in cells/*.md; do
   fname=$(echo $f | cut -d/ -f2 | cut -d- -f1,2)
   fcellstat="../lab/aimd_structures/$fname.hydrogens.txt"
   echo $f
-  python ~/lab/analysis.py $f 'graphs/$name-$method.png' --every 20 --hydropath $fcellstat msd
+  python ~/lab/analysis.py $f 'graphs/$name-$method.png' --every 20 --hydropath $fcellstat msd -s
 done
 date +%s
