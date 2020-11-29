@@ -131,6 +131,5 @@ dmypy.json
 # Used in project
 tasks_*.txt
 graphs*/
-analysis_bak.sh
-modules.sh
 .sync.ffs_db
+*.sh
