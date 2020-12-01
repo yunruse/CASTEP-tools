@@ -10,7 +10,8 @@ from itertools import product
 from os.path import isfile, isdir, split, splitext
 
 from matplotlib import pyplot
-from numpy import array, arange, pi, nan, dot, cross
+import numpy as np
+from numpy import dot, cross
 from numpy.linalg import pinv, norm
 
 from parse_cell import CellFile
@@ -64,7 +65,7 @@ def method(command):
 
 
 D = [-1, 0, 1]
-DELTAS = array(list(product(D, D, D)))
+DELTAS = np.array(list(product(D, D, D)))
 
 TIMELABEL = 'Time / ps'
 
@@ -93,7 +94,7 @@ class Analysis:
             step_is_valid=lambda i: i % record_every == 0,
         )
         self.steps = [s for s in md.steps if s.ions]
-        
+
         if cellpath is None:
             cellpath = mdpath.replace('.md', '.cell')
         elif cellpath.lower() == 'none':
@@ -113,7 +114,7 @@ class Analysis:
 
         time = [step.t / 1000 for step in self.steps]
         var = [func(step) for step in self.steps]
-        valid = [i for i in var if i is not nan]
+        valid = [i for i in var if i is not np.nan]
         ax.plot(time, var)
         ax.plot([0, max(time)], [valid[0], valid[0]],
                 color='gray', linestyle='-')
@@ -171,11 +172,11 @@ class Analysis:
         C = [i.pos for i in step.ions if i.species == 'C']
         H_H2 = [i.pos for i in step.ions if i.species == 'H(H2)']
         H_CH4 = [i.pos for i in step.ions if i.species == 'H(CH4)']
-        CH = array([
+        CH = np.array([
             self.cell_square_dist(c, h) ** 0.5
             for c in C for h in H_CH4
         ])
-        HH = array([
+        HH = np.array([
             self.cell_square_dist(H_H2[a], H_H2[b]) ** 0.5
             for a in range(len(H_H2)) for b in range(a)
         ])
@@ -186,7 +187,7 @@ class Analysis:
         steps = self.steps
         CH, HH = self.bonds(steps[0])
         N = 0
-        for i in arange(dstep, len(steps), dstep):
+        for i in np.arange(dstep, len(steps), dstep):
             N += 1
             ch, hh = self.bonds(steps[i])
             CH += ch
@@ -216,7 +217,7 @@ class Analysis:
         CH, HH = self.bonds_gen(DSTEP)
 
         maxbond = max(HH[0], CH[0])
-        lengths = arange(DR, maxbond, DR)
+        lengths = np.arange(DR, maxbond, DR)
 
         def hist(bonds, rho):
             bonds = sorted(bonds, reverse=True)
@@ -226,7 +227,7 @@ class Analysis:
                 while bonds and bonds[-1] <= r:
                     bonds.pop()
                     n += 1
-                hist.append(rho * n / (4*pi*r**2) / DR)
+                hist.append(rho * n / (4*np.pi*r**2) / DR)
             return hist
 
         ions = self.steps[0].ions
@@ -235,7 +236,7 @@ class Analysis:
         n_CH4 = len([i.pos for i in ions if i.species == 'H(CH4)'])
 
         a, b, c = self.cell
-        V = norm(dot(cross(a, b), c))
+        V = norm(np.dot(np.cross(a, b), c))
         ch_hist = hist(CH, n_CH4 / V)
         hh_hist = hist(HH, n_H2 / V)
 
