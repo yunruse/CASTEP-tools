@@ -16,8 +16,7 @@ parser = ArgumentParser(description=__doc__)
 parser.add_argument('path', type=str, help='''
     the file path of the .md file OR a .analysis file
 ''')
-argv = ['/Users/yunruse/Documents/University Work/SH Project/lab/graphs/CH5_naumova_P_1-20gpa-300K-msd.ax']
-path = parser.parse_args(argv).path
+path = parser.parse_args().path
 
 # allow running from applescript
 if ':' in path:
