@@ -93,15 +93,18 @@ class Analysis:
             step_is_valid=lambda i: i % record_every == 0,
         )
         self.steps = [s for s in md.steps if s.ions]
-
+        
         if cellpath is None:
             cellpath = mdpath.replace('.md', '.cell')
+        elif cellpath.lower() == 'none':
+            cellpath = None
 
-        self.has_hydro_tags = hydro_path is not None
+        if cellpath is not None:
+            self.has_hydro_tags = hydro_path is not None
 
-        find(cellpath)
-        self.cell = CellFile(cellpath).cell_vectors
-        self.cellinv = pinv(self.cell)
+            find(cellpath)
+            self.cell = CellFile(cellpath).cell_vectors
+            self.cellinv = pinv(self.cell)
 
     def plot_variable(self, ax, name, unit, func):
         ax.set_title(f'{name} of `{self.name}`')
@@ -276,8 +279,9 @@ parser.add_argument('--every', metavar='N', type=int, default=1, help='''
     only record data at every N timesteps
 ''')
 parser.add_argument('--cell', metavar='path', type=str, default=None, help='''
-    path for .cell file
-    (defaults to same name as .md file)
+    path for .cell file. Defaults to same name as .md file.
+    Use `--cell none` to provide no cell
+    (which some graphs will explicitly fail on!)
 ''')
 parser.add_argument('--hydropath', metavar='path', type=str, default=None, help='''
     path for .hydrogens.txt for .cell files
