@@ -33,28 +33,10 @@ def method(command):
     def wrapper(func):
         @wraps(func)
         def newfunc(self):
-
-            # ensure pyplot is clear
             pyplot.clf()
-
             ax = pyplot.axes()
-            result = func(self, ax)
-            if result is NotImplemented:
-                return
-
-            # attempt to save file
-            if self.outpath:
-                path = self.outpath.replace(
-                    '$name', self.name).replace(
-                    '$method', command)
-                print(path)
-                pyplot.savefig(path)
-                if self.save_state:
-                    path, _ = splitext(path)
-                    path += '.ax'
-                    print(path)
-                    with open(path, 'wb') as f:
-                        dump(ax, f)
+            data = func(self, ax)
+            self.output(command, ax, data)
         FUNCS[command] = func.__name__
         return newfunc
     return wrapper
@@ -102,6 +84,29 @@ class Analysis:
             find(cellpath)
             self.cell = CellFile(cellpath).cell_vectors
             self.cellinv = pinv(self.cell)
+
+    def output(self, command, ax, data=None):
+        '''Handler for methods. May be called in own graphs.'''
+        if data is NotImplemented:
+            return
+        if data is None:
+            data = dict()
+
+        data['name'] = self.name
+        data['method'] = command
+
+        if self.outpath:
+            path = self.outpath
+            for k, v in data.items():
+                path = path.replace('$'+k, str(v))
+            print(path)
+            pyplot.savefig(path)
+            if self.save_state:
+                path, _ = splitext(path)
+                path += '.ax'
+                print(path)
+                with open(path, 'wb') as f:
+                    dump(ax, f)
 
     def plot_variable(self, ax, name, unit, func):
         ax.set_title(f'{name} of `{self.name}`')
