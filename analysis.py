@@ -206,6 +206,21 @@ class Analysis:
         HH = [i / N for i in HH]
         return CC, CH, HH
 
+    @method('bond')
+    def bonds_graph(self, ax):
+        ax.set_title(f'Bond lengths of `{self.name}`')
+        CC, CH, HH = self.bonds_average(dstep=100)
+
+        ax.set_xlabel('Bond length $r$ (Angstroms)')
+        ax.set_xlim(0, 10)
+        ax.set_ylabel('Cumulative number of bonds')
+        ax.set_ylim(0, len(self.steps[0].ions))
+
+        ax.plot(sorted(CC), range(len(CC)), label='C-C (CH4)')
+        ax.plot(sorted(CH), range(len(CH)), label='C-H (CH4)')
+        ax.plot(sorted(HH), range(len(HH)), label='H-H (H2)')
+        ax.legend()
+
     @method('rdf')
     def rdf(self, ax):
         DR = 0.01
