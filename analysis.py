@@ -232,7 +232,7 @@ class Analysis:
 
     @method('bondanim', anim=True)
     def bonds_anim(self, ax, step):
-        ax.set_title(f'Bond lengths of `{self.name}` (t={step.t}')
+        ax.set_title(f'Bond lengths of `{self.name}` (at {step.t:7.1f} fs)')
         CC, CH, HH = self.bonds_step(step)
 
         ax.set_xlabel('Bond length $r$ (Angstroms)')
