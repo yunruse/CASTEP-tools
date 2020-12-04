@@ -1,4 +1,4 @@
-from os.path import expanduser
+from os.path import expanduser, isfile
 
 
 def find(path):

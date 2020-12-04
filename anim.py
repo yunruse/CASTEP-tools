@@ -8,7 +8,7 @@ The simulation assumes that each timestep is of equal length.
 '''
 
 from argparse import ArgumentParser
-from os.path import isfile, isdir, split, splitext
+from os.path import isdir, split, splitext
 
 import numpy as np
 from matplotlib import pyplot

@@ -7,7 +7,7 @@ from pickle import dump
 from argparse import ArgumentParser
 from functools import wraps
 from itertools import product
-from os.path import isfile, isdir, split, splitext
+from os.path import isdir, split, splitext
 
 from matplotlib import pyplot
 import numpy as np

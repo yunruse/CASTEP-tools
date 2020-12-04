@@ -17,13 +17,13 @@ and the source directory contains an all.param and all.sh to copy through.
 '''
 
 from argparse import ArgumentParser
-from os.path import isfile, split, join
+from os.path import split, join
 from shutil import copyfile
 from sys import stderr
 
 from numpy import gcd
 
-from helpers import ParseError
+from helpers import find, ParseError
 from parse_cell import CellFile
 
 
@@ -63,8 +63,9 @@ in which the following variables will be transformed in text:
 def parse(args, path):
     if args.verbose:
         print('\n# Processing', path)
-    if not isfile(path):
-        error(2, 'fatal: path provided is not a file')
+
+    path = find(path)
+
     try:
         crystal = CellFile(path, args.forceabs)
     except ParseError as f:
