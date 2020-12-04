@@ -37,8 +37,7 @@ def method(command, anim=False):
                     pyplot.clf()
                     ax = pyplot.axes()
                     data = func(self, ax, step) or dict()
-                    data['i'] = i
-                    data['t'] = step.t
+                    data['t'] = round(step.t, 1)
                     self.output(command, ax, data)
         else:
             def newfunc(self):
