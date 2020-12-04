@@ -180,30 +180,33 @@ class Analysis:
             self.cell_square_dist(H_H2[a], H_H2[b]) ** 0.5
             for a in range(len(H_H2)) for b in range(a)
         ])
+        CC = np.array([
+            self.cell_square_dist(C[a], C[b]) ** 0.5
+            for a in range(len(C)) for b in range(a)
+        ])
 
-        return CH, HH
+        return CC, CH, HH
 
-    def bonds_gen(self, dstep=500):
+    def bonds_gen(self, dstep):
         steps = self.steps
-        CH, HH = self.bonds(steps[0])
+        CC, CH, HH = self.bonds(steps[0])
         N = 0
         for i in np.arange(dstep, len(steps), dstep):
             N += 1
-            ch, hh = self.bonds(steps[i])
+            cc, ch, hh = self.bonds(steps[i])
+            CC += cc
             CH += ch
             HH += hh
 
+        CC = [i / N for i in CC]
         CH = [i / N for i in CH]
         HH = [i / N for i in HH]
-        return CH, HH
+        return CC, CH, HH
 
     @method('rdf')
     def rdf(self, ax):
-        BOND_CH = 1.08595
-        BOND_HH = 0.7414
-        BOND_CH = BOND_HH = 1
-        DR = 0.04
-        DSTEP = 250
+        DR = 0.01
+        DSTEP = 100
         EPSILON = 1e-15
 
         if not self.has_hydro_tags:
@@ -214,8 +217,7 @@ class Analysis:
         ax.set_xlabel(f'Bond length $r$ (dstep={DSTEP})')
         ax.set_ylabel('Radial distribution $g(r)$')
 
-        # CH, HH = self.bonds(self.steps[-1])
-        CH, HH = self.bonds_gen(DSTEP)
+        CC, CH, HH = self.bonds_gen(DSTEP)
 
         maxbond = max(HH[0], CH[0])
         lengths = np.arange(DR, maxbond, DR)
@@ -235,14 +237,18 @@ class Analysis:
 
         n_H2 = len([i.pos for i in ions if i.species == 'H(H2)'])
         n_CH4 = len([i.pos for i in ions if i.species == 'H(CH4)'])
+        n_C = len([i.pos for i in ions if i.species == 'C'])
 
         a, b, c = self.cell
         V = norm(np.dot(np.cross(a, b), c))
-        ch_hist = hist(CH, n_CH4 / V)
-        hh_hist = hist(HH, n_H2 / V)
-
-        ax.plot(lengths / BOND_CH, ch_hist, label='CH (CH4)')
-        ax.plot(lengths / BOND_HH, hh_hist, label='HH (H2)')
+        # to first peak should integrate to 4 (CH4)
+        cc_hist = hist(CC, n_C**2 / V)
+        ch_hist = hist(CH, n_C * n_CH4 / V)
+        hh_hist = hist(HH, n_H2**2 / V)
+        
+        ax.plot(lengths, cc_hist, label='C-C (CH4)')
+        ax.plot(lengths, ch_hist, label='C-H (CH4)')
+        ax.plot(lengths, hh_hist, label='H-H (H2)')
         ax.legend()
 
         # the top two values will be the first spike, the
