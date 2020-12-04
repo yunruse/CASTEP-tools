@@ -25,6 +25,6 @@ for f in cells/*.md; do
   python ~/lab/analysis.py $f \
     'graphs_live/$name-$method.png' \
     --every 20 --hydropath $fcellstat -s \
-    msd
+    $@
 done
 date +%s
