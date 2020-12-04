@@ -222,9 +222,9 @@ class Analysis:
         CC, CH, HH = self.bonds_average(dstep=100)
 
         ax.set_xlabel('Bond length $r$ (Angstroms)')
-        ax.set_xlim(0, 10)
+        ax.set_xlim(-0.1, 10)
         ax.set_ylabel('Cumulative number of bonds')
-        ax.set_ylim(0, len(self.steps[0].ions))
+        #ax.set_ylim(-100, len(self.steps[0].ions)**2)
 
         ax.plot(sorted(CC), range(len(CC)), label='C-C (CH4)')
         ax.plot(sorted(CH), range(len(CH)), label='C-H (CH4)')
