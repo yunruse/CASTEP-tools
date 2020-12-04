@@ -22,23 +22,33 @@ from parse_md import MDFile
 FUNCS = {}
 
 
-def method(command):
+def method(command, anim=False):
     '''
-    Complicated meta-wrapper for functions in Analysis.
+    Meta-wrapper for functions in Analysis.
 
     Registers an identifier, used both in commands and as a key
     in Analysis.graphs. Additionally, saves output to files.
     '''
     # and adding niceties
     def wrapper(func):
-        @wraps(func)
-        def newfunc(self):
-            pyplot.clf()
-            ax = pyplot.axes()
-            data = func(self, ax)
-            self.output(command, ax, data)
+        if anim:
+            def newfunc(self):
+                for i, step in enumerate(self.steps):
+                    pyplot.clf()
+                    ax = pyplot.axes()
+                    data = func(self, ax, step) or dict()
+                    data['i'] = i
+                    data['t'] = step.t
+                    self.output(command, ax, data)
+        else:
+            def newfunc(self):
+                pyplot.clf()
+                ax = pyplot.axes()
+                data = func(self, ax)
+                self.output(command, ax, data)
+
         FUNCS[command] = func.__name__
-        return newfunc
+        return wraps(func)(newfunc)
     return wrapper
 
 
