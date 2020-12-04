@@ -26,6 +26,7 @@ import xml.etree.ElementTree as ET
 
 from colorama import Fore, Style
 
+
 def run(args):
     names = []
     if args.list is not None and os.path.isfile(args.list):
@@ -44,7 +45,7 @@ def run(args):
     jobs_seen = []
 
     use_default = not (args.unqueued or args.queued or args.running)
-    
+
     queued = list(tree.find('job_info'))
     queued.sort(key=lambda j: float(j.find('JAT_prio').text))
     jobs_seen += queued
@@ -59,7 +60,7 @@ def run(args):
     jobs_seen += running
     if use_default or args.running:
         jobs_show += running
-    
+
     # find tasks not in --list
     unseen_names = set()
     if use_default or args.unqueued:
@@ -72,7 +73,7 @@ def run(args):
     #
     # ...and display
     #
-    
+
     if args.ids:
         print(' '.join([
             job.find('JB_job_number').text
@@ -117,7 +118,7 @@ def run(args):
 
             text = f"{ID} {slots} {stateS} {date} {nameS}"
             print(color + text)
-        
+
         for name in unseen_names:
             print(
                 Fore.LIGHTMAGENTA_EX,
