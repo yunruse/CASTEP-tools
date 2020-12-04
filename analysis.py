@@ -204,6 +204,7 @@ class Analysis:
         BOND_CH = BOND_HH = 1
         DR = 0.04
         DSTEP = 250
+        EPSILON = 1e-15
 
         if not self.has_hydro_tags:
             print('Error! rdf requires hydrogen tagging')
@@ -224,7 +225,7 @@ class Analysis:
             hist = []
             for r in lengths:
                 n = 0
-                while bonds and bonds[-1] <= r:
+                while bonds and bonds[-1] <= r + EPSILON:
                     bonds.pop()
                     n += 1
                 hist.append(rho * n / (4*np.pi*r**2) / DR)
