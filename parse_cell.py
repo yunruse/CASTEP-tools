@@ -3,7 +3,8 @@ from itertools import product
 
 import numpy as np
 
-from parse_block import ParseError, BlockFile
+from helpers import ParseError
+from parse_block import BlockFile
 
 POS_REL = 'positions_frac'
 POS_ABS = 'positions_abs'

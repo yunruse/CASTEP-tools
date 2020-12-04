@@ -14,13 +14,9 @@ import numpy as np
 from matplotlib import pyplot
 import matplotlib.animation as animation
 
+from helpers import find
 from parse_cell import CellFile
 from parse_md import MDFile
-
-
-def find(path):
-    if not isfile(path):
-        raise FileNotFoundError(f'Could not find `{path}`')
 
 
 ATOMS = {

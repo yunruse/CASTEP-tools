@@ -1,5 +1,4 @@
-class ParseError(ValueError):
-    pass
+from helpers import ParseError
 
 
 def char_line_content(file):

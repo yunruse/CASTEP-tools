@@ -14,13 +14,9 @@ import numpy as np
 from numpy import dot, cross
 from numpy.linalg import pinv, norm
 
+from helpers import find
 from parse_cell import CellFile
 from parse_md import MDFile
-
-
-def find(path):
-    if not isfile(path):
-        raise FileNotFoundError(f'Could not find `{path}`')
 
 
 FUNCS = {}
@@ -31,7 +27,7 @@ def method(command):
     Complicated meta-wrapper for functions in Analysis.
 
     Registers an identifier, used both in commands and as a key
-    in Analysis.graphs. Additionally, saves output to files
+    in Analysis.graphs. Additionally, saves output to files.
     '''
     # and adding niceties
     def wrapper(func):
@@ -172,7 +168,7 @@ class Analysis:
         C = [i.pos for i in step.ions if i.species == 'C']
         H_H2 = [i.pos for i in step.ions if i.species == 'H(H2)']
         H_CH4 = [i.pos for i in step.ions if i.species == 'H(CH4)']
-        
+
         CH = np.array([
             self.cell_square_dist(c, h) ** 0.5
             for c in C for h in H_CH4
@@ -210,7 +206,7 @@ class Analysis:
         DR = 0.01
         DSTEP = 100
         EPSILON = 1e-15
-        
+
         a, b, c = self.cell
         V = norm(np.dot(np.cross(a, b), c))
         maxbond = min(norm(a), norm(b), norm(c))
@@ -242,11 +238,11 @@ class Analysis:
         n_H2 = len([i.pos for i in ions if i.species == 'H(H2)'])
         n_CH4 = len([i.pos for i in ions if i.species == 'H(CH4)'])
         n_C = len([i.pos for i in ions if i.species == 'C'])
-        
+
         cc_hist = hist(CC, n_C**2 / V)
         ch_hist = hist(CH, n_C * n_CH4 / V)
         hh_hist = hist(HH, n_H2**2 / V)
-        
+
         ax.plot(lengths, cc_hist, label='C-C (CH4)')
         ax.plot(lengths, ch_hist, label='C-H (CH4)')
         ax.plot(lengths, hh_hist, label='H-H (H2)')

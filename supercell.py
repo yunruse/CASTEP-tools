@@ -23,7 +23,7 @@ from sys import stderr
 
 from numpy import gcd
 
-from parse_block import ParseError
+from helpers import ParseError
 from parse_cell import CellFile
 
 
