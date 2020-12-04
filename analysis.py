@@ -228,7 +228,7 @@ class Analysis:
                 while bonds and bonds[-1] <= r + EPSILON:
                     bonds.pop()
                     n += 1
-                hist.append(rho * n / (4*np.pi*r**2) / DR)
+                hist.append(n / (4/3*np.pi*((r+DR)**3 - r**3)) / rho)
             return hist
 
         ions = self.steps[0].ions
