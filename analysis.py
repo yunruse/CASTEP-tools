@@ -168,10 +168,11 @@ class Analysis:
 
         ax.legend()
 
-    def bonds(self, step):
+    def bonds_step(self, step):
         C = [i.pos for i in step.ions if i.species == 'C']
         H_H2 = [i.pos for i in step.ions if i.species == 'H(H2)']
         H_CH4 = [i.pos for i in step.ions if i.species == 'H(CH4)']
+        
         CH = np.array([
             self.cell_square_dist(c, h) ** 0.5
             for c in C for h in H_CH4
@@ -187,13 +188,14 @@ class Analysis:
 
         return CC, CH, HH
 
-    def bonds_gen(self, dstep):
+    def bonds_average(self, dstep):
         steps = self.steps
-        CC, CH, HH = self.bonds(steps[0])
+        # TODO: look after 1ps
+        CC, CH, HH = self.bonds_step(steps[0])
         N = 0
         for i in np.arange(dstep, len(steps), dstep):
             N += 1
-            cc, ch, hh = self.bonds(steps[i])
+            cc, ch, hh = self.bonds_step(steps[i])
             CC += cc
             CH += ch
             HH += hh
@@ -208,6 +210,11 @@ class Analysis:
         DR = 0.01
         DSTEP = 100
         EPSILON = 1e-15
+        
+        a, b, c = self.cell
+        V = norm(np.dot(np.cross(a, b), c))
+        maxbond = min(norm(a), norm(b), norm(c))
+        lengths = np.arange(DR, maxbond, DR)
 
         if not self.has_hydro_tags:
             print('Error! rdf requires hydrogen tagging')
@@ -217,10 +224,7 @@ class Analysis:
         ax.set_xlabel(f'Bond length $r$ (dstep={DSTEP})')
         ax.set_ylabel('Radial distribution $g(r)$')
 
-        CC, CH, HH = self.bonds_gen(DSTEP)
-
-        maxbond = max(HH[0], CH[0])
-        lengths = np.arange(DR, maxbond, DR)
+        CC, CH, HH = self.bonds_average(DSTEP)
 
         def hist(bonds, rho):
             bonds = sorted(bonds, reverse=True)
@@ -238,10 +242,7 @@ class Analysis:
         n_H2 = len([i.pos for i in ions if i.species == 'H(H2)'])
         n_CH4 = len([i.pos for i in ions if i.species == 'H(CH4)'])
         n_C = len([i.pos for i in ions if i.species == 'C'])
-
-        a, b, c = self.cell
-        V = norm(np.dot(np.cross(a, b), c))
-        # to first peak should integrate to 4 (CH4)
+        
         cc_hist = hist(CC, n_C**2 / V)
         ch_hist = hist(CH, n_C * n_CH4 / V)
         hh_hist = hist(HH, n_H2**2 / V)
