@@ -250,10 +250,10 @@ class Analysis:
         yvals = sorted(ch_hist + hh_hist)
         maxy = yvals[-3]*1.1
         # maxy = 6
-        ax.ylim(-0.1, maxy)
+        ax.set_ylim(-0.1, maxy)
 
         ax.plot([-1, maxbond+0.1], [1, 1], color='gray', linestyle='-')
-        ax.xlim(-0.1, maxbond)
+        ax.set_xlim(-0.1, maxbond)
 
 
 parser = ArgumentParser(description=__doc__)
