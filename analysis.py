@@ -231,6 +231,21 @@ class Analysis:
         ax.plot(sorted(HH), range(len(HH)), label='H-H (H2)')
         ax.legend()
 
+    @method('bondanim', anim=True)
+    def bonds_anim(self, ax, step):
+        ax.set_title(f'Bond lengths of `{self.name}` (t={step.t}')
+        CC, CH, HH = self.bonds_step(step)
+
+        ax.set_xlabel('Bond length $r$ (Angstroms)')
+        ax.set_xlim(-0.1, 10)
+        ax.set_ylabel('Cumulative number of bonds')
+        #ax.set_ylim(-100, len(self.steps[0].ions)**2)
+
+        ax.plot(sorted(CC), range(len(CC)), label='C-C (CH4)')
+        ax.plot(sorted(CH), range(len(CH)), label='C-H (CH4)')
+        ax.plot(sorted(HH), range(len(HH)), label='H-H (H2)')
+        ax.legend()
+
     @method('rdf')
     def rdf(self, ax):
         DR = 0.01
