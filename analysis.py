@@ -14,7 +14,7 @@ import numpy as np
 from numpy import dot, cross
 from numpy.linalg import pinv, norm
 
-from helpers import find
+from helpers import find, rolling
 from parse_cell import CellFile
 from parse_md import MDFile
 
@@ -171,10 +171,14 @@ class Analysis:
         ax.set_xlabel(TIMELABEL)
         t = [step.t / 1000 for step in steps]
 
+        ROLLING = 200
+
         ax.set_ylabel('Mean square displacement / Å²')
         msds = [self.msd(step) for step in steps]
         for k in msds[0]:
-            ax.plot(t, [i[k] for i in msds], label=k)
+            msd = [d[k] for d in msds]
+            ax.plot(t, msd, color='gray', alpha=0.5)
+            ax.plot(t, rolling(msd, ROLLING), label=k)
 
         ax.legend()
 
