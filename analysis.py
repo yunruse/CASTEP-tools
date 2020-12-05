@@ -276,10 +276,6 @@ class Analysis:
 
         ax.set_xlim(-0.1, maxbond)
         ax.set_ylim(-1, Y_LIM)
-        ax.annotate(
-            "Annotations are the number of bonds up to that peak",
-            xy=(0, -1),
-            alpha=0.5)
 
         def plot_hist(bonds, label, col):
             bonds = sorted(bonds, reverse=True)
