@@ -223,7 +223,7 @@ class Analysis:
         ax.set_xlabel('Bond length $r$ (Angstroms)')
         ax.set_xlim(-0.1, 10)
         ax.set_ylabel('Cumulative number of bonds')
-        #ax.set_ylim(-100, len(self.steps[0].ions)**2)
+        # ax.set_ylim(-100, len(self.steps[0].ions)**2)
 
         ax.plot(sorted(CC), range(len(CC)), label='C-C (CH4)')
         ax.plot(sorted(CH), range(len(CH)), label='C-H (CH4)')
@@ -238,7 +238,7 @@ class Analysis:
         ax.set_xlabel('Bond length $r$ (Angstroms)')
         ax.set_xlim(-0.1, 10)
         ax.set_ylabel('Cumulative number of bonds')
-        #ax.set_ylim(-100, len(self.steps[0].ions)**2)
+        # ax.set_ylim(-100, len(self.steps[0].ions)**2)
 
         ax.plot(sorted(CC), range(len(CC)), label='C-C (CH4)')
         ax.plot(sorted(CH), range(len(CH)), label='C-H (CH4)')
@@ -247,61 +247,85 @@ class Analysis:
 
     @method('rdf')
     def rdf(self, ax):
+        '''
+        Plot radial density function for different species of bonds.
+        Where major peaks occur, they are annotated with
+        the number of bonds that occur up to that peak's bond distance.
+        '''
+        if not self.has_hydro_tags:
+            print('Error! rdf requires hydrogen tagging')
+            return NotImplemented
+
         DR = 0.01
         DSTEP = 100
         EPSILON = 1e-15
+        Y_LIM = 30
 
         a, b, c = self.cell
         V = norm(np.dot(np.cross(a, b), c))
         maxbond = min(norm(a), norm(b), norm(c))
         lengths = np.arange(DR, maxbond, DR)
 
-        if not self.has_hydro_tags:
-            print('Error! rdf requires hydrogen tagging')
-            return NotImplemented
-
         ax.set_title(f'Radial distribution function of `{self.name}`')
         ax.set_xlabel(f'Bond length $r$ (dstep={DSTEP})')
         ax.set_ylabel('Radial distribution $g(r)$')
 
-        CC, CH, HH = self.bonds_average(DSTEP)
+        ax.set_xlim(-0.1, maxbond)
+        ax.set_ylim(-1, Y_LIM)
+        ax.annotate(
+            "Annotations are the number of bonds up to that peak",
+            xy=(0, -1),
+            alpha=0.5)
 
-        def hist(bonds, rho):
+        def plot_hist(bonds, label, col):
             bonds = sorted(bonds, reverse=True)
+            rho = len(bonds) / V
             hist = []
+            nums = []
             for r in lengths:
+
                 n = 0
                 while bonds and bonds[-1] <= r + EPSILON:
                     bonds.pop()
                     n += 1
-                hist.append(n / (4/3*np.pi*((r+DR)**3 - r**3)) / rho)
-            return hist
+                V_shell = 4/3 * np.pi * ((r+DR)**3 - r**3)
+                nums.append(n)
+                hist.append(n / V_shell / rho)
+            ax.plot(lengths, hist, label=label, color=col)
+
+            # Search for peaks and tag them
+
+            n_total = 0
+            is_decreasing = False
+            for i, (r, y, n) in enumerate(zip(lengths, hist, nums)):
+                n_total += n
+                n_last = n
+                if y < 4:
+                    continue
+                if len(nums) > i+1 and n > nums[i+1]:
+                    if is_decreasing:
+                        continue
+                    ax.annotate(
+                        f"{n_total}",
+                        xy=(r+0.05, min(y, Y_LIM)),
+                        color=col
+                    )
+                    is_decreasing = True
+                else:
+                    is_decreasing = False
 
         ions = self.steps[0].ions
-
         n_H2 = len([i.pos for i in ions if i.species == 'H(H2)'])
         n_CH4 = len([i.pos for i in ions if i.species == 'H(CH4)'])
         n_C = len([i.pos for i in ions if i.species == 'C'])
 
-        cc_hist = hist(CC, n_C**2 / V)
-        ch_hist = hist(CH, n_C * n_CH4 / V)
-        hh_hist = hist(HH, n_H2**2 / V)
-
-        ax.plot(lengths, cc_hist, label='C-C (CH4)')
-        ax.plot(lengths, ch_hist, label='C-H (CH4)')
-        ax.plot(lengths, hh_hist, label='H-H (H2)')
+        CC, CH, HH = self.bonds_average(DSTEP)
+        plot_hist(CC, 'C-C (CH4)', 'tab:blue')
+        plot_hist(CH, 'C-H (CH4)', 'tab:orange')
+        plot_hist(HH, 'H-H (H2)', 'tab:green')
         ax.legend()
 
-        # the top two values will be the first spike, the
-        # intramolecular covalent bonds
-        # (one for each histogram)
-        yvals = sorted(ch_hist + hh_hist)
-        maxy = yvals[-3]*1.1
-        # maxy = 6
-        ax.set_ylim(-0.1, maxy)
-
         ax.plot([-1, maxbond+0.1], [1, 1], color='gray', linestyle='-')
-        ax.set_xlim(-0.1, maxbond)
 
 
 parser = ArgumentParser(description=__doc__)
