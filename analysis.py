@@ -18,7 +18,9 @@ from helpers import find, rolling
 from parse_cell import CellFile
 from parse_md import MDFile
 
-
+COL_CC = 'tab:green'
+COL_CH = 'tab:blue'
+COL_HH = 'tab:orange'
 FUNCS = {}
 
 
@@ -153,9 +155,6 @@ class Analysis:
         '''Mean square displacement from reference cell'''
         species = {}
         for a, b in zip(step.ions, self.steps[0].ions):
-            if not (a.species == b.species and a.number == b.number):
-                print(f'unmatched: {a.species} {a.number}'
-                      f' / {b.species} {b.number}')
             if a.species not in species:
                 species[a.species] = []
             dist = self.cell_square_dist(a.pos, b.pos)
@@ -175,18 +174,26 @@ class Analysis:
 
         ax.set_ylabel('Mean square displacement / Å²')
         msds = [self.msd(step) for step in steps]
-        for k in msds[0]:
-            msd = [d[k] for d in msds]
+        for key, col in (
+            ('C', COL_CC),
+            ('H(CH4)', COL_CH),
+            ('H(H2)', COL_HH)
+        ):
+            msd = [d[key] for d in msds]
             ax.plot(t, msd, color='gray', alpha=0.5)
-            ax.plot(t, rolling(msd, ROLLING), label=k)
+            ax.plot(t, rolling(msd, ROLLING), label=key, color=col)
 
         ax.legend()
 
     def bonds_step(self, step):
         C = [i.pos for i in step.ions if i.species == 'C']
-        H_H2 = [i.pos for i in step.ions if i.species == 'H(H2)']
         H_CH4 = [i.pos for i in step.ions if i.species == 'H(CH4)']
+        H_H2 = [i.pos for i in step.ions if i.species == 'H(H2)']
 
+        CC = np.array([
+            self.cell_square_dist(C[a], C[b]) ** 0.5
+            for a in range(len(C)) for b in range(a)
+        ])
         CH = np.array([
             self.cell_square_dist(c, h) ** 0.5
             for c in C for h in H_CH4
@@ -194,10 +201,6 @@ class Analysis:
         HH = np.array([
             self.cell_square_dist(H_H2[a], H_H2[b]) ** 0.5
             for a in range(len(H_H2)) for b in range(a)
-        ])
-        CC = np.array([
-            self.cell_square_dist(C[a], C[b]) ** 0.5
-            for a in range(len(C)) for b in range(a)
         ])
 
         return CC, CH, HH
@@ -320,9 +323,9 @@ class Analysis:
         n_C = len([i.pos for i in ions if i.species == 'C'])
 
         CC, CH, HH = self.bonds_average(DSTEP)
-        plot_hist(CC, 'C-C (CH4)', 'tab:blue')
-        plot_hist(CH, 'C-H (CH4)', 'tab:orange')
-        plot_hist(HH, 'H-H (H2)', 'tab:green')
+        plot_hist(CC, 'C-C (CH4)', COL_CC)
+        plot_hist(CH, 'C-H (CH4)', COL_CH)
+        plot_hist(HH, 'H-H (H2)', COL_HH)
         ax.legend()
 
         ax.plot([-1, maxbond+0.1], [1, 1], color='gray', linestyle='-')
