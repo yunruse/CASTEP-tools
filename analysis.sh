@@ -15,15 +15,13 @@
 #$ -N analysis_res
 #$ -cwd
 
-mkdir graphs_live
-
 date +%s
 for f in cells/*.md; do
   fname=$(echo $f | cut -d/ -f2 | cut -d- -f1,2)
   fcellstat="../lab/aimd_structures/$fname.hydrogens.txt"
   echo $f
   python ~/lab/analysis.py $f \
-    'graphs_live/$name-$method.png' \
+    'graphs/$name-$method.png' \
     --every 20 --hydropath $fcellstat -s \
     $@
 done
