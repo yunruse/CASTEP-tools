@@ -170,7 +170,7 @@ class Analysis:
         ax.set_xlabel(TIMELABEL)
         t = [step.t / 1000 for step in steps]
 
-        ROLLING = 200
+        rolling_length = len(self.steps) * self.record_every / 100
 
         ax.set_ylabel('Mean square displacement / Å²')
         msds = [self.msd(step) for step in steps]
@@ -181,7 +181,7 @@ class Analysis:
         ):
             msd = [d[key] for d in msds]
             ax.plot(t, msd, color='gray', alpha=0.5)
-            ax.plot(t, rolling(msd, ROLLING), label=key, color=col)
+            ax.plot(t, rolling(msd, rolling_length), label=key, color=col)
 
         ax.legend()
 
