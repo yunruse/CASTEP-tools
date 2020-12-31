@@ -20,7 +20,7 @@ ATOMIC_LENGTH = 0.529177210903
 # hartree / k_B to kelvin
 ATOMIC_TEMP = 3.157750248e5
 # hartree / a_0**3 to GPa
-ATOMIC_PRESSURE = 2.942101427e4
+ATOMIC_PRESSURE = 2.942101427e5
 
 
 class Ion:
@@ -133,7 +133,7 @@ class MDFile:
                 elif tag == 'T':
                     step.T = float(chunks[0]) * ATOMIC_TEMP
                 elif tag == 'P':
-                    step.P = float(chunks[0])
+                    step.P = float(chunks[0]) * ATOMIC_PRESSURE
                 elif tag == 'h':
                     step.h += list(map(float, chunks))
                 elif tag == 'R':
