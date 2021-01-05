@@ -139,6 +139,20 @@ class Analysis:
     def pressure(self, ax):
         self.plot_variable(ax, 'Pressure', 'as raw', lambda step: step.P)
 
+    @method('ratio')
+    def temp_pressure(self, ax):
+        ax.set_title(f'Ratio T/P of `{self.name}`')
+
+        ax.set_xlabel(TIMELABEL)
+        
+        time = [step.t / 1000 for step in self.steps]
+        ratio = [step.T / step.P for step in self.steps]
+        ax.plot(time, ratio)
+
+        from statistics import stdev
+        ax.set_ylabel(f'$T / P$ (K/GPa) (stddev={stdev(ratio)})')
+        
+
     def cell_square_dist(self, a, b):
         '''
         Return |b - a|**2 considering that
